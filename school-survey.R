@@ -3,7 +3,9 @@ setwd("your working directory here")
 
 ## LOADING THE NECESSARY PACKAGES
 library(dplyr)
+library(reshape2)
 library(ggplot2)
+library(RColorBrewer)
 
 ## PREPARING AND CLEANING THE DATA
 sch <-  read_sav("CY6_MS_CMB_SCH_QQQ.sav")
@@ -51,5 +53,33 @@ SC017Q08NA_mex <- mean(sch_r$SC017Q08NA_d[sch_r$CNT=="MEX"],na.rm=T
 SC017Q08NA_tha <- mean(sch_r$SC017Q08NA_d[sch_r$CNT=="THA"],na.rm=T)
 SC017Q08NA_vnm <- mean(sch_r$SC017Q08NA_d[sch_r$CNT=="VNM"],na.rm=T)
 
+sch_resource_idn <- data.frame(SC017Q05NA_idn, SC017Q06NA_idn, SC017Q07NA_idn, SC017Q08NA_idn)
+sch_resource_bra <- data.frame(SC017Q05NA_bra, SC017Q06NA_bra, SC017Q07NA_bra, SC017Q08NA_bra)
+sch_resource_mex <- data.frame(SC017Q05NA_mex, SC017Q06NA_mex, SC017Q07NA_mex, SC017Q08NA_mex)
+sch_resource_tha <- data.frame(SC017Q05NA_tha, SC017Q06NA_tha, SC017Q07NA_tha, SC017Q08NA_tha)
+sch_resource_vnm <- data.frame(SC017Q05NA_vnm, SC017Q06NA_vnm, SC017Q07NA_vnm, SC017Q08NA_vnm)   
+sch_resource <- data.frame(sch_resource_idn, sch_resource_bra, sch_resource_mex, sch_resource_tha, sch_resource_vnm)       
+sch_resource <- reshape(sch_resource,varying=c("SC017Q05NA_idn", "SC017Q06NA_idn", "SC017Q07NA_idn", "SC017Q08NA_idn","SC017Q05NA_bra", "SC017Q06NA_bra", "SC017Q07NA_bra", "SC017Q08NA_bra","SC017Q05NA_mex", "SC017Q06NA_mex", "SC017Q07NA_mex", "SC017Q08NA_mex","SC017Q05NA_tha", "SC017Q06NA_tha", "SC017Q07NA_tha", "SC017Q08NA_tha","SC017Q05NA_vnm", "SC017Q06NA_vnm", "SC017Q07NA_vnm", "SC017Q08NA_vnm"),direction="long",sep="_")                       
+sch_resource$id <- NULL
+colnames(sch_resource)[colnames(sch_resource) == "time"] <- "CNT"
 
- 
+# converting into percentage format                       
+sch_resource$SC017Q05NA <- (sch_resource$SC017Q05NA*100)
+sch_resource$SC017Q06NA <- (sch_resource$SC017Q06NA*100)
+sch_resource$SC017Q07NA <- (sch_resource$SC017Q07NA*100)
+sch_resource$SC017Q08NA <- (sch_resource$SC017Q08NA*100)                       
+
+# restructuring the data                       
+sch_resource <- melt(sch_resource,id.vars="CNT")
+colnames(sch_resource)[colnames(sch_resource) == "variable"] <- "shortage"
+colnames(sch_resource)[colnames(sch_resource) == "value"] <- "share_principal"
+sch_resource$shortage[sch_resource$shortage == "SC017Q05NA"] <- "Lack of quantity in educational material"
+sch_resource$shortage[sch_resource$shortage == "SC017Q06NA"] <- "Lack of quality in educational material"
+sch_resource$shortage[sch_resource$shortage == "SC017Q07NA"] <- "Lack of quantity in infrastructure"                       
+sch_resource$shortage[sch_resource$shortage == "SC017Q08NA"] <- "Lack of quality in infrastructure"
+
+## DATA VISUALIZATION                       
+sch_resource_plot <- ggplot(sch_resource, aes(fill=shortage, y=share_principal, x=CNT)) + geom_bar(position="dodge", stat="identity",width=0.65) + scale_fill_brewer(palette="BrBG") + xlab("Country") + ylab("Share of Principals")   
+                       
+                       
+                       
