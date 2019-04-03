@@ -80,6 +80,26 @@ sch_resource$shortage[sch_resource$shortage == "SC017Q08NA"] <- "Lack of quality
 
 ## DATA VISUALIZATION                       
 sch_resource_plot <- ggplot(sch_resource, aes(fill=shortage, y=share_principal, x=CNT)) + geom_bar(position="dodge", stat="identity",width=0.65) + scale_fill_brewer(palette="BrBG") + xlab("Country") + ylab("Share of Principals")   
+
+## PLOTTING SHORTAGE AND MEAN OF MATH SCORE
                        
+df <- reshape(sch_resource, idvar="CNT",timevar="shortage",direction="wide")                       
+df$shortage_mean <- rowMeans(df[,-1],na.rm=T) 
+df <- df[,c("CNT","shortage_mean")]
+df$CNT[df$CNT == "idn"] <- "IDN"
+df$CNT[df$CNT == "bra"] <- "BRA"
+df$CNT[df$CNT == "mex"] <- "MEX"
+df$CNT[df$CNT == "tha"] <- "THA"
+df$CNT[df$CNT == "vnm"] <- "VNM"                       
                        
-                       
+math <- read.csv("PISA math mean score.csv")
+math <- math[math$Country.Code == "IDN" | math$Country.Code == "BRA" | math$Country.Code == "MEX"| math$Country.Code == "THA" | math$Country.Code == "VNM",]
+math <- math[,c("Country.Code","X2015..YR2015.")]
+colnames(math)[colnames(math) == "X2015..YR2015."] <- "math_mean"
+colnames(math)[colnames(math) == "Country.Code"] <- "CNT"                       
+
+corr_math_shortage <- merge(math,df,by="CNT")                       
+str(corr_math_shortage)
+corr_math_shortage$math_mean <- as.numeric(paste(corr_math_shortage$math_mean))
+corr <- cor.test(corr_math_shortage$math_mean, corr_math_shortage$shortage_mean)                       
+ggplot(corr_math_shortage, aes(x=shortage_mean, y=math_mean)) + geom_point() + geom_smooth(method=lm, se=TRUE) +  geom_text(label=c("BRA","IDN","MEX","THA","VNM")) + labs(title="Scatterplot of Shortage vs Mean of Math Score", y="Mean of PISA Math Score", x="Resources Shortage")                       
